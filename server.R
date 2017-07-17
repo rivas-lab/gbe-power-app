@@ -1,45 +1,56 @@
 library(shiny)
 library(GeneticsDesign)
+library(ggplot2)
+library(dplyr)
 
-af.data = read.table("../output/lof_enrichment_analysis/shiny_data.tsv", 
-                     sep="\t", header=TRUE, row.names=1)#, quote="\"")
+pops <- c("AFR", "AMR", "ASJ", "EAS", "FIN", "NFE", "SAS", "UKB")
+
+af.gnomad = read.table("data/shiny_data.tsv", 
+                       sep="\t", header=TRUE)#, row.names=1)#, quote="\"")
+af.ukb = read.table("data/shiny_ukb.tsv", 
+                    sep="\t", header=TRUE)#, row.names=1)#, quote="\"")
+
+af.data = af.gnomad %>% left_join(af.ukb)
+# For now, I will replaec NA with zero. In the future, I should probably make it
+# so that nothing is displayed when there are NAs for a particular population.
+af.data[is.na(af.data)] <- 0
+rownames(af.data) <- af.data$gene_name
+af.data$gene_name <- NULL
+y.things <- paste("AF_bayes_", pops, sep="")
+ymin.things <- paste("AF_bayes_ci_lower_", pops, sep="")
+ymax.things <- paste("AF_bayes_ci_upper_", pops, sep="")
+
+theme_set(theme_bw(base_size=18))
+a <- colnames(af.data)[seq(1, dim(af.data)[2], 3)]
+#xlabels <- as.factor(sapply(a, function(x) unlist(strsplit(x, split="_"))[3]))
+xlabels <- pops
 
 shinyServer(function(input, output, session) {
   
-  gene <- renderPrint(input$gene)
-  pD <- renderPrint(input$pD)
-  RRAa <- renderPrint(input$RRAa)
-  nCase <- renderPrint(input$nCase)
-  nControl <- renderPrint(input$nControl)
-  alpha <- renderPrint(input$alpha)
-  unselected <- renderPrint({ input$unselected })
+  afs <- reactive({af.data[input$gene, ]})
+  ratio <- reactive({input$nControl / input$nCase})
   
-  ratio = nControl / nCase
-  
-  power = sapply(d, function(x) GPC.default(pA=x, pD=pD, RRAa=RRAa, 
-                                            RRAA=RRAa * 2, Dprime=1, 
-                                            pB=pA, nCase=nCase, ratio=ratio, 
-                                            alpha=alpha, unselected=unselected, 
-                                            quiet=TRUE)$power)
-  
-  # Combine the selected variables into a new data frame
-  selectedData <- reactive({
-    iris[, c(input$xcol, input$ycol)]
+  power.vals <- reactive({sapply(afs(), function(x) GPC.default(
+    pA=x, pD=input$pD, RRAa=input$RRAa, RRAA=input$RRAa * 2, 
+    Dprime=1, pB=x, nCase=input$nCase, ratio=ratio(), alpha=input$alpha, 
+    unselected=input$unselected, quiet=TRUE)$power)
   })
 
-  clusters <- reactive({
-    kmeans(selectedData(), input$clusters)
-  })
+  power.df <- reactive({data.frame(
+    x = seq(1, length(power.vals()) / 3, 1),
+    y = power.vals()[y.things],
+    ymin = power.vals()[ymin.things],
+    ymax = power.vals()[ymax.things],
+    xlabels = xlabels
+  )})
 
   output$plot1 <- renderPlot({
-    palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
-      "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
-
-    par(mar = c(5.1, 4.1, 0, 1))
-    plot(selectedData(),
-         col = clusters()$cluster,
-         pch = 20, cex = 3)
-    points(clusters()$centers, pch = 4, cex = 4, lwd = 4)
+    ggplot(power.df(), aes(x = x,y = y)) + 
+      geom_point(size=4) + 
+      geom_errorbar(aes(ymin = ymin, ymax = ymax), width=0.25) + 
+      xlab("Populations") + 
+      ylab("Power") + 
+      scale_x_continuous(breaks=seq(length(xlabels)), labels = power.df()$xlabels)
   })
 
 })

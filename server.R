@@ -2,6 +2,7 @@ library(shiny)
 library(GeneticsDesign)
 library(ggplot2)
 library(dplyr)
+library(reshape2)
 
 pops <- c("AFR", "AMR", "ASJ", "EAS", "FIN", "NFE", "SAS", "UKB")
 
@@ -20,20 +21,47 @@ y.things <- paste("AF_bayes_", pops, sep="")
 ymin.things <- paste("AF_bayes_ci_lower_", pops, sep="")
 ymax.things <- paste("AF_bayes_ci_upper_", pops, sep="")
 
+af.data.small = head(af.data, 100)
+
 theme_set(theme_bw(base_size=18))
 a <- colnames(af.data)[seq(1, dim(af.data)[2], 3)]
 #xlabels <- as.factor(sapply(a, function(x) unlist(strsplit(x, split="_"))[3]))
 xlabels <- pops
 
+# I can add support for protective here.
+gpc.wrapper <- function(pA, pD, RRAa, nCase, nControl, alpha, unselected) {
+  if (pA == 0) {return(0)}
+  else {
+    ratio <- nControl / nCase
+    return(GPC.default(pA=pA, pD=pD, RRAa=RRAa, RRAA=RRAa * 2, Dprime=1, 
+                       pB=pA, nCase=nCase, ratio=ratio, alpha=alpha,
+                       unselected=unselected, quiet=TRUE)$power)
+  }
+}
+
+pops.power.summary <- function(df) {
+  out <- colSums(df[,y.things] > 0.8)
+  out <- data.frame("Population"=pops, "Number genes > 0.8 power"=out, check.names=FALSE)
+  return(out)
+}
+
 shinyServer(function(input, output, session) {
   
   afs <- reactive({af.data[input$gene, ]})
-  ratio <- reactive({input$nControl / input$nCase})
   
-  power.vals <- reactive({sapply(afs(), function(x) GPC.default(
-    pA=x, pD=input$pD, RRAa=input$RRAa, RRAA=input$RRAa * 2, 
-    Dprime=1, pB=x, nCase=input$nCase, ratio=ratio(), alpha=input$alpha, 
-    unselected=input$unselected, quiet=TRUE)$power)
+  power.summary <- reactive({pops.power.summary(
+    sapply(y.things, function(y) sapply(
+      af.data[, y],
+      function(x) gpc.wrapper(pA=x, pD=input$pD, RRAa=input$RRAa,
+        nCase=input$nCase, nControl=input$nControl, alpha=input$alpha,
+        unselected=input$unselected)
+      )
+      ))
+  })
+  
+  power.vals <- reactive({sapply(afs(), function(x) gpc.wrapper(
+    pA=x, pD=input$pD, RRAa=input$RRAa, nCase=input$nCase, nControl=input$nControl,
+    alpha=input$alpha,unselected=input$unselected))
   })
 
   power.df <- reactive({data.frame(
@@ -43,8 +71,16 @@ shinyServer(function(input, output, session) {
     ymax = power.vals()[ymax.things],
     xlabels = xlabels
   )})
+  
+  display.df <- reactive({data.frame(
+    Population = power.df()$xlabels,
+    Power = power.df()$y,
+    "Power CI Low" = power.df()$ymin,
+    "Power CI High" = power.df()$ymax
+    )
+  })
 
-  output$plot1 <- renderPlot({
+  output$plot.gene <- renderPlot({
     ggplot(power.df(), aes(x = x,y = y)) + 
       geom_point(size=4) + 
       geom_errorbar(aes(ymin = ymin, ymax = ymax), width=0.25) + 
@@ -52,5 +88,19 @@ shinyServer(function(input, output, session) {
       ylab("Power") + 
       scale_x_continuous(breaks=seq(length(xlabels)), labels = power.df()$xlabels)
   })
+  
+  # output$plot.summary <- renderPlot({
+  #   ggplot(NULL, aes(af.data.small$AF_bayes_AFR)) + 
+  #     geom_histogram(aes(y=cumsum(..count..)))
+  # })
+  # output$plot.summary <- renderPlot({
+  #   ggplot(power.summary(), aes(value, colour = "Population")) + 
+  #     stat_bin(aes(y=cumsum(..count..)), geom="line")
+  # })
+  # ggplot(NULL,aes(res[,"AF_bayes_AFR"]))+stat_bin(aes(y=cumsum(..count..)),geom="line",color="green")
+  # facet_grid(series ~ Population)
+  
+  output$table.gene <- renderTable({display.df()})
+  output$table.summary <- renderTable({power.summary()})
 
 })

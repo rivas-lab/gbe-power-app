@@ -14,7 +14,16 @@ shinyUI(pageWithSidebar(
     numericInput("alpha", "Type I error rate", value=2e-6, min=0, max=1),
     checkboxInput("unselected", label = "Unselected controls", value = FALSE)
   ),
+  # mainPanel(
+    # plotOutput('plot.gene')
+    # Show a tabset that includes a plot, summary, and table view
+    # of the generated distribution
   mainPanel(
-    plotOutput('plot1')
+    tabsetPanel(
+      tabPanel("Gene Plot", plotOutput("plot.gene")), 
+      tabPanel("Power Table", tableOutput("table.gene")),
+      tabPanel("Design Summary Table", tableOutput("table.summary"))
+      )
+    )  
   )
-))
+)

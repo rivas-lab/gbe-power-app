@@ -86,6 +86,7 @@ shinyServer(function(input, output, session) {
       geom_errorbar(aes(ymin = ymin, ymax = ymax), width=0.25) + 
       xlab("Populations") + 
       ylab("Power") + 
+    coord_cartesian(ylim = c(-0.01, 1.01)) + 
       scale_x_continuous(breaks=seq(length(xlabels)), labels = power.df()$xlabels)
   })
   

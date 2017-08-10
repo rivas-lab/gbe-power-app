@@ -1,10 +1,13 @@
 library(shiny)
+library(shinythemes)
 
 genes = as.character(read.table("data/shiny_genes.tsv", 
                                 header=FALSE)$V1)
 
-shinyUI(pageWithSidebar(
-  headerPanel('PTV Association Power'),
+shinyUI(fluidPage(theme = shinytheme("flatly"),
+          
+sidebarLayout(
+  #headerPanel('PTV Association Power'),
   sidebarPanel(
     selectInput("gene", "Gene", choices=genes, selectize=TRUE, selected="PCSK9"),
     sliderInput("pD", "Disease prevalence", value=0.1, min=0, max=1, step=0.01),
@@ -14,11 +17,9 @@ shinyUI(pageWithSidebar(
     numericInput("alpha", "Type I error rate", value=2e-6, min=0, max=1),
     checkboxInput("unselected", label = "Unselected controls", value = FALSE)
   ),
-  # mainPanel(
-    # plotOutput('plot.gene')
-    # Show a tabset that includes a plot, summary, and table view
-    # of the generated distribution
   mainPanel(
+    h3("PTV Association Power", style = "font-family: 'Jura'; color: blue; font-size: 32px;"),
+    HTML("<p>Details"),
     tabsetPanel(
       tabPanel("Gene Plot", plotOutput("plot.gene")), 
       tabPanel("Power Table", tableOutput("table.gene")),
@@ -26,4 +27,5 @@ shinyUI(pageWithSidebar(
       )
     )  
   )
+)
 )

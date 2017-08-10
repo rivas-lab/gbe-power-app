@@ -5,7 +5,9 @@ genes = as.character(read.table("data/shiny_genes.tsv",
                                 header=FALSE)$V1)
 
 shinyUI(fluidPage(theme = shinytheme("flatly"),
-          
+
+navbarPage("Global Biobank Engine",
+tabPanel("PTV Power",
 sidebarLayout(
   #headerPanel('PTV Association Power'),
   sidebarPanel(
@@ -28,4 +30,4 @@ sidebarLayout(
     )  
   )
 )
-)
+)))

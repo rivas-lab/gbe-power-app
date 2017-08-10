@@ -16,3 +16,18 @@ use the arrow next to the "Run App" button to choose whether to launch the app
 in RStudio or your browser. Note that the app relies on data that is tracked
 with git LFS, so be it might make sense to make sure all the LFS data has been
 pulled in using `git lfs pull`.
+
+## Pushing the app to shinyapps.io
+
+Use 
+```
+library(rsconnect)
+rsconnect::deployApp('path/to/your/app')
+``` 
+to push the app to the web. Note that you must install the GeneticsDesign
+package using
+```
+library(devtools)
+install_github("cdeboever3/GeneticsDesign")
+```
+for this to work.

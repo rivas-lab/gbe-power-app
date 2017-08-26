@@ -22,7 +22,7 @@ bootstrapPage(
         #h3("PTV Association Power", style = "font-size: 32px;"),
         #HTML("<p>Details"),
         tabsetPanel(
-          tabPanel("Plot", plotOutput("plot.gene")), 
+          tabPanel("Plot", plotOutput("plot.gene")), rsconnect::deployApp
           tabPanel("Table", tableOutput("table.gene")),
           tabPanel("Design Summary Table", tableOutput("table.summary"))
           )

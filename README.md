@@ -31,3 +31,12 @@ library(devtools)
 install_github("cdeboever3/GeneticsDesign")
 ```
 for this to work.
+
+## App description
+
+### Design Summary Table
+
+The design summary table tells you how many genes are powered at 0.8 given the
+study design parameters. The gene in the "Gene" box is not used for this table.
+Currently, the calculation is kind of slow, so it may take ~1 minute to
+generate the table.

@@ -23,8 +23,8 @@ bootstrapPage(
         #HTML("<p>Details"),
         tabsetPanel(
           tabPanel("Plot", plotOutput("plot.gene")), 
-          tabPanel("Table", tableOutput("table.gene"))
-          #tabPanel("Design Summary Table", tableOutput("table.summary"))
+          tabPanel("Table", tableOutput("table.gene")),
+          tabPanel("Design Summary Table", tableOutput("table.summary"))
           )
         )
       )

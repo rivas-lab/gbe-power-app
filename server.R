@@ -69,14 +69,16 @@ shinyServer(function(input, output, session) {
     y = power.vals()[y.things],
     ymin = power.vals()[ymin.things],
     ymax = power.vals()[ymax.things],
-    xlabels = xlabels
+    xlabels = xlabels,
+    caf = as.vector(t(afs()[y.things]))
   )})
   
   display.df <- reactive({data.frame(
     Population = power.df()$xlabels,
     Power = power.df()$y,
     "Power CI Low" = power.df()$ymin,
-    "Power CI High" = power.df()$ymax
+    "Power CI High" = power.df()$ymax,
+    "Composite Allele Frequency" = power.df()$caf
     )
   })
 
@@ -101,7 +103,7 @@ shinyServer(function(input, output, session) {
   # ggplot(NULL,aes(res[,"AF_bayes_AFR"]))+stat_bin(aes(y=cumsum(..count..)),geom="line",color="green")
   # facet_grid(series ~ Population)
   
-  output$table.gene <- renderTable({display.df()})
+  output$table.gene <- renderTable({display.df()}, digits=-2)
   output$table.summary <- renderTable({power.summary()})
 
 })
